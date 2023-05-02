@@ -1,5 +1,6 @@
-import atexit
 import logging
+import sys
+import threading
 import time
 from typing import Optional, Tuple
 
@@ -38,10 +39,11 @@ def get_window_handle_from_pid(pid: int) -> Optional[int]:
 
 
 class AudioManager:
-    last_volume = 1
 
-    def __init__(self, pid: int):
+    def __init__(self, pid: Optional[int]):
         self.pid = pid
+        self.last_volume = 1
+        self.is_process_running = True
         self.volume_control: Optional[audio.ISimpleAudioVolume] = None
         self._init_volume_control()
 
@@ -57,53 +59,79 @@ class AudioManager:
             self.volume_control.SetMasterVolume(volume, None)
             self.last_volume = volume
 
+    def main_loop(self, hwnd: int):
+        while True:
+            if not self.is_process_running:
+                exit_now(0)
+            current_hwnd = win32gui.GetForegroundWindow()
+            if current_hwnd == hwnd:
+                self.set_volume(1)
+            else:
+                self.set_volume(0)
+            time.sleep(LOOP_INTERVAL)
 
-flag = False
+
+audio_manager = None
 
 
-def main_loop(pid: int, hwnd: int):
-    audio_manager = AudioManager(pid)
-
-    def exit_handler():
-        logging.info("Exiting program...")
+def exit_now(code):
+    logging.info("Exiting program...")
+    icon.stop()
+    if audio_manager is not None:
+        audio_manager.last_volume = 0
         audio_manager.set_volume(1)
+    sys.exit(code)
 
-    atexit.register(exit_handler)
 
+def check_startup():
+    current_process = psutil.Process()
+    res = 0
+    for process in psutil.process_iter():
+        if process.name() == current_process.name() and process.pid != current_process.pid:
+            res += 1
+    if res > 1:
+        sys.exit(1)
+
+
+def check_process_running():
     while True:
-        if not psutil.pid_exists(sr_pid) or flag:
-            exit(0)
-        current_hwnd = win32gui.GetForegroundWindow()
-        if current_hwnd == hwnd:
-            audio_manager.set_volume(1)
-        else:
-            audio_manager.set_volume(0)
-        time.sleep(LOOP_INTERVAL)
+        if not psutil.pid_exists(sr_pid):
+            logging.info("Process %s was close", TARGET_PROCESS_NAME)
+            audio_manager.is_process_running = False
+            break
+        time.sleep(LOOP_INTERVAL * 10)
 
 
-def on_quit_clicked(cur_icon):
-    global flag
-    cur_icon.stop()
-    flag = True
+def on_quit_clicked():
+    audio_manager.is_process_running = False
 
 
 TARGET_PROCESS_NAME = "StarRail.exe"
 LOOP_INTERVAL = 0.1  # 循环时间间隔，单位：秒
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+
+def get_icon():
     image = Image.open(pkg_resources.resource_filename(__name__, "static/silence.ico"))
     menu = pystray.Menu(pystray.MenuItem('退出', on_quit_clicked))
-    icon = pystray.Icon('星铁后台静音', image, '星铁后台静音', menu)
+    cur_icon = pystray.Icon('星铁后台静音', image, '星铁后台静音', menu)
+    return cur_icon
+
+
+if __name__ == "__main__":
+    check_startup()
+
+    logging.basicConfig(level=logging.INFO)
+    icon = get_icon()
     icon.run_detached()
 
     sr_pid, sr_hwnd = get_process_info(TARGET_PROCESS_NAME)
     if sr_pid is None:
         logging.error("Process %s not found", TARGET_PROCESS_NAME)
-        exit(1)
+        exit_now(1)
 
+    audio_manager = AudioManager(sr_pid)
     logging.info("Process %s found, PID: %s, HWND: %s", TARGET_PROCESS_NAME, sr_pid, sr_hwnd)
-
-    main_loop(sr_pid, sr_hwnd)
+    threading.Thread(target=check_process_running, daemon=True).start()
+    audio_manager.main_loop(sr_hwnd)
 
 # pyinstaller -Fw --add-data "static/silence.ico;static" -i "static/silence.ico" background_muter.py
