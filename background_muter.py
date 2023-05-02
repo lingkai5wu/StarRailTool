@@ -48,11 +48,14 @@ class AudioManager:
         self._init_volume_control()
 
     def _init_volume_control(self):
-        sessions = audio.AudioUtilities.GetAllSessions()
-        for session in sessions:
-            if session.Process and session.Process.pid == self.pid:
-                self.volume_control = session.SimpleAudioVolume
-                break
+        while self.volume_control is None:
+            sessions = audio.AudioUtilities.GetAllSessions()
+            for session in sessions:
+                if session.Process and session.Process.pid == self.pid:
+                    self.volume_control = session.SimpleAudioVolume
+                    break
+            logging.info("SimpleAudioVolume not found, try again...")
+            time.sleep(LOOP_INTERVAL)
 
     def set_volume(self, volume: float):
         if self.last_volume != volume:
@@ -128,12 +131,13 @@ if __name__ == "__main__":
     sr_pid, sr_hwnd = get_process_info(TARGET_PROCESS_NAME)
     if sr_pid is None:
         logging.error("Process %s not found", TARGET_PROCESS_NAME)
+        icon.notify("请先启用游戏本体", "星铁后台静音 启动失败")
         exit_now(1)
 
     audio_manager = AudioManager(sr_pid)
     logging.info("Process %s found, PID: %s, HWND: %s", TARGET_PROCESS_NAME, sr_pid, sr_hwnd)
     threading.Thread(target=check_process_running, daemon=True).start()
-    icon.notify("游戏关闭后自动退出或从任务栏退出", "星铁后台静音启动")
+    icon.notify("游戏关闭后自动退出或从任务栏退出", "星铁后台静音 启动成功")
     audio_manager.main_loop(sr_hwnd)
 
 # pyinstaller -Fw --add-data "static/silence.ico;static" -i "static/silence.ico" background_muter.py
