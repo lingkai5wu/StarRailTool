@@ -8,6 +8,8 @@ import pkg_resources
 import psutil
 import pycaw.pycaw as audio
 import pystray
+import win32api
+import win32con
 import win32gui
 import win32process
 from PIL import Image
@@ -79,7 +81,6 @@ audio_manager = None
 
 def exit_now(code):
     logging.info("Exiting program...")
-    icon.remove_notification()
     icon.stop()
     if audio_manager is not None:
         audio_manager.last_volume = 0
@@ -131,13 +132,13 @@ if __name__ == "__main__":
     sr_pid, sr_hwnd = get_process_info(TARGET_PROCESS_NAME)
     if sr_pid is None:
         logging.error("Process %s not found", TARGET_PROCESS_NAME)
-        icon.notify("请先启用游戏本体", "星铁后台静音 启动失败")
+        win32api.MessageBox(0, "请先启动游戏本体", "星铁后台静音", win32con.MB_ICONWARNING)
         exit_now(1)
 
     audio_manager = AudioManager(sr_pid)
     logging.info("Process %s found, PID: %s, HWND: %s", TARGET_PROCESS_NAME, sr_pid, sr_hwnd)
     threading.Thread(target=check_process_running, daemon=True).start()
-    icon.notify("游戏关闭后自动退出或从任务栏退出", "星铁后台静音 启动成功")
+    icon.notify("游戏关闭后自动退出，或从任务栏退出", "星铁后台静音 启动成功")
     audio_manager.main_loop(sr_hwnd)
 
 # pyinstaller -Fw --add-data "static/silence.ico;static" -i "static/silence.ico" background_muter.py
