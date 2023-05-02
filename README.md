@@ -1,4 +1,5 @@
 # StarRailTool
+
 星穹铁道小工具（仅有Python版
 
 微联动[Scighost/StarRailTool: 星穹铁道小工具（仅有命令行版](https://github.com/Scighost/StarRailTool)
@@ -7,7 +8,7 @@
 
 ## 后台自动静音
 
-**对应 [background_muter.py](background_muter.py)** 
+**对应 [background_muter.py](background_muter.py)**
 
 游戏在后台时自动静音，切换到前台时恢复，便于刷本。
 
@@ -18,11 +19,11 @@
 1. 在[releases](https://github.com/lingkai5wu/StarRailTool/releases/latest)或其他镜像下载`background_muter.exe`，也可直接运行`.py`文件
 2. 打开游戏本体
 3. 打开`background_muter.exe`
-4. 关闭游戏后会自动退出本程序
+4. 关闭游戏后会自动退出本程序，你也可以从状态栏中手动退出。
 
 ### 已知问题
 
-- **在游戏运行时手动关闭本程序无法自动恢复音量**，遇到该问题可以在音量合成器中手动复原。
+- **在游戏运行时强制关闭本程序（例如使用任务管理器或直接关机），本程序无法自动恢复音量**，遇到该问题可以再次启动本程序，或在音量合成器中手动复原。
 
 ### 运行截图
 
@@ -30,7 +31,7 @@
 
 ## 抽卡资源获取情况
 
-**对应 [get_month_detail.py](get_month_detail.py)** 
+**对应 [get_month_detail.py](get_month_detail.py)**
 
 通过米游社API获取某个月份内获得的`星琼`和`星轨通票&星轨专票`的获取情况，并将数据保存到Excel文件中。
 
