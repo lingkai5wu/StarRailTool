@@ -76,6 +76,7 @@ audio_manager = None
 
 def exit_now(code):
     logging.info("Exiting program...")
+    icon.remove_notification()
     icon.stop()
     if audio_manager is not None:
         audio_manager.last_volume = 0
@@ -132,6 +133,7 @@ if __name__ == "__main__":
     audio_manager = AudioManager(sr_pid)
     logging.info("Process %s found, PID: %s, HWND: %s", TARGET_PROCESS_NAME, sr_pid, sr_hwnd)
     threading.Thread(target=check_process_running, daemon=True).start()
+    icon.notify("游戏关闭后自动退出或从任务栏退出", "星铁后台静音启动")
     audio_manager.main_loop(sr_hwnd)
 
 # pyinstaller -Fw --add-data "static/silence.ico;static" -i "static/silence.ico" background_muter.py
