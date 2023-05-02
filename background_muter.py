@@ -3,10 +3,13 @@ import logging
 import time
 from typing import Optional, Tuple
 
+import pkg_resources
 import psutil
 import pycaw.pycaw as audio
+import pystray
 import win32gui
 import win32process
+from PIL import Image
 
 
 def get_process_info(name: str) -> Tuple[Optional[int], Optional[int]]:
@@ -55,6 +58,9 @@ class AudioManager:
             self.last_volume = volume
 
 
+flag = False
+
+
 def main_loop(pid: int, hwnd: int):
     audio_manager = AudioManager(pid)
 
@@ -65,7 +71,7 @@ def main_loop(pid: int, hwnd: int):
     atexit.register(exit_handler)
 
     while True:
-        if not psutil.pid_exists(sr_pid):
+        if not psutil.pid_exists(sr_pid) or flag:
             exit(0)
         current_hwnd = win32gui.GetForegroundWindow()
         if current_hwnd == hwnd:
@@ -75,11 +81,21 @@ def main_loop(pid: int, hwnd: int):
         time.sleep(LOOP_INTERVAL)
 
 
+def on_quit_clicked(cur_icon):
+    global flag
+    cur_icon.stop()
+    flag = True
+
+
 TARGET_PROCESS_NAME = "StarRail.exe"
 LOOP_INTERVAL = 0.1  # 循环时间间隔，单位：秒
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    image = Image.open(pkg_resources.resource_filename(__name__, "static/silence.ico"))
+    menu = pystray.Menu(pystray.MenuItem('退出', on_quit_clicked))
+    icon = pystray.Icon('星铁后台静音', image, '星铁后台静音', menu)
+    icon.run_detached()
 
     sr_pid, sr_hwnd = get_process_info(TARGET_PROCESS_NAME)
     if sr_pid is None:
@@ -89,3 +105,5 @@ if __name__ == "__main__":
     logging.info("Process %s found, PID: %s, HWND: %s", TARGET_PROCESS_NAME, sr_pid, sr_hwnd)
 
     main_loop(sr_pid, sr_hwnd)
+
+# pyinstaller -Fw --add-data "static/silence.ico;static" -i "static/silence.ico" background_muter.py
