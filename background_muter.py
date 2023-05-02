@@ -15,15 +15,6 @@ import win32process
 from PIL import Image
 
 
-def get_process_info(name: str) -> Tuple[Optional[int], Optional[int]]:
-    for proc in psutil.process_iter():
-        if proc.name() == name:
-            pid = proc.pid
-            hwnd = get_window_handle_from_pid(pid)
-            return pid, hwnd
-    return None, None
-
-
 def get_window_handle_from_pid(pid: int) -> Optional[int]:
     def callback(hwnd, cur_hwnd_list):
         _, found_pid = win32process.GetWindowThreadProcessId(hwnd)
@@ -98,21 +89,8 @@ def check_startup():
         sys.exit(1)
 
 
-def check_process_running():
-    while True:
-        if not psutil.pid_exists(sr_pid):
-            logging.info("Process %s was close", TARGET_PROCESS_NAME)
-            audio_manager.is_process_running = False
-            break
-        time.sleep(LOOP_INTERVAL * 10)
-
-
 def on_quit_clicked():
     audio_manager.is_process_running = False
-
-
-TARGET_PROCESS_NAME = "StarRail.exe"
-LOOP_INTERVAL = 0.1  # 循环时间间隔，单位：秒
 
 
 def get_icon():
@@ -122,6 +100,33 @@ def get_icon():
     return cur_icon
 
 
+def get_process_info(name: str) -> Tuple[int, int]:
+    pid, hwnd = None, None
+    for proc in psutil.process_iter():
+        if proc.name() == name:
+            pid = proc.pid
+            hwnd = get_window_handle_from_pid(pid)
+    if pid is None:
+        logging.error("Process %s not found", TARGET_PROCESS_NAME)
+        win32api.MessageBox(0, "请先启动游戏本体", "星铁后台静音", win32con.MB_ICONWARNING)
+        exit_now(1)
+    while hwnd is None:
+        logging.info("Window handle not found, try again...")
+        hwnd = get_window_handle_from_pid(pid)
+    return pid, hwnd
+
+
+def check_process_running():
+    while True:
+        if not psutil.pid_exists(sr_pid):
+            logging.info("Process %s was close", TARGET_PROCESS_NAME)
+            audio_manager.is_process_running = False
+            break
+        time.sleep(LOOP_INTERVAL * 10)
+
+
+TARGET_PROCESS_NAME = "StarRail.exe"
+LOOP_INTERVAL = 0.2  # 循环时间间隔，单位：秒
 if __name__ == "__main__":
     check_startup()
 
@@ -130,11 +135,6 @@ if __name__ == "__main__":
     icon.run_detached()
 
     sr_pid, sr_hwnd = get_process_info(TARGET_PROCESS_NAME)
-    if sr_pid is None:
-        logging.error("Process %s not found", TARGET_PROCESS_NAME)
-        win32api.MessageBox(0, "请先启动游戏本体", "星铁后台静音", win32con.MB_ICONWARNING)
-        exit_now(1)
-
     audio_manager = AudioManager(sr_pid)
     logging.info("Process %s found, PID: %s, HWND: %s", TARGET_PROCESS_NAME, sr_pid, sr_hwnd)
     threading.Thread(target=check_process_running, daemon=True).start()
