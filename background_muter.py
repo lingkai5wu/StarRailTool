@@ -1,3 +1,4 @@
+import atexit
 import logging
 import time
 from typing import Optional, Tuple
@@ -34,7 +35,7 @@ def get_window_handle_from_pid(pid: int) -> Optional[int]:
 
 
 class AudioManager:
-    last_volume = 0
+    last_volume = 1
 
     def __init__(self, pid: int):
         self.pid = pid
@@ -56,6 +57,12 @@ class AudioManager:
 
 def main_loop(pid: int, hwnd: int):
     audio_manager = AudioManager(pid)
+
+    def exit_handler():
+        logging.info("Exiting program...")
+        audio_manager.set_volume(1)
+
+    atexit.register(exit_handler)
 
     while True:
         current_hwnd = win32gui.GetForegroundWindow()
