@@ -65,6 +65,8 @@ def main_loop(pid: int, hwnd: int):
     atexit.register(exit_handler)
 
     while True:
+        if not psutil.pid_exists(sr_pid):
+            exit(0)
         current_hwnd = win32gui.GetForegroundWindow()
         if current_hwnd == hwnd:
             audio_manager.set_volume(1)
