@@ -82,7 +82,7 @@ def exit_now(code):
 def check_startup():
     current_process = psutil.Process()
     res = 0
-    for process in psutil.process_iter():
+    for process in processes:
         if process.name() == current_process.name() and process.pid != current_process.pid:
             res += 1
     if res > 1:
@@ -102,7 +102,7 @@ def get_icon():
 
 def get_process_info(name: str) -> Tuple[int, int]:
     pid, hwnd = None, None
-    for proc in psutil.process_iter():
+    for proc in processes:
         if proc.name() == name:
             pid = proc.pid
             hwnd = get_window_handle_from_pid(pid)
@@ -128,8 +128,8 @@ def check_process_running():
 TARGET_PROCESS_NAME = "StarRail.exe"
 LOOP_INTERVAL = 0.2  # 循环时间间隔，单位：秒
 if __name__ == "__main__":
+    processes = list(psutil.process_iter())
     check_startup()
-
     logging.basicConfig(level=logging.INFO)
     icon = get_icon()
     icon.run_detached()
