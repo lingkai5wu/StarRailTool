@@ -8,11 +8,13 @@
 
 ## 后台自动静音
 
-**对应 [background_muter.py](background_muter.py)**
+**对应 [background_muter.py](background_muter.py)，重构于[AutoMuteBG](https://github.com/lingkai5wu/AutoMuteBG)**
 
 游戏在后台时自动静音，切换到前台时恢复，便于刷本（特别是模拟宇宙）。
 
 程序的原理为调用系统的音量合成器，仅Windows可用。
+
+这里的代码写的很烂，要看源码请移步[AutoMuteBG](https://github.com/lingkai5wu/AutoMuteBG)。
 
 ### 使用方法
 

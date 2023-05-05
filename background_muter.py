@@ -16,11 +16,10 @@ from PIL import Image
 
 
 def get_window_handle_from_pid(pid: int) -> Optional[int]:
-    def callback(hwnd, cur_hwnd_list):
-        _, found_pid = win32process.GetWindowThreadProcessId(hwnd)
+    def callback(cur_hwnd, cur_hwnd_list):
+        _, found_pid = win32process.GetWindowThreadProcessId(cur_hwnd)
         if found_pid == pid:
-            cur_hwnd_list.append(hwnd)
-        return True
+            cur_hwnd_list.append(cur_hwnd)
 
     hwnd_list = []
     win32gui.EnumWindows(callback, hwnd_list)
@@ -37,7 +36,8 @@ class AudioManager:
         self.pid = pid
         self.last_volume = 1
         self.is_process_running = True
-        self.volume_control: Optional[audio.ISimpleAudioVolume] = None
+        self.volume_control = None
+
         self._init_volume_control()
 
     def _init_volume_control(self):
